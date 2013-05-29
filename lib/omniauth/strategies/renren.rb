@@ -6,9 +6,9 @@ module OmniAuth
   module Strategies
     class Renren < OmniAuth::Strategies::OAuth2
       option :client_options, {
-        :site => 'http://graph.renren.com'        
+        :site => 'https://graph.renren.com',
         :authorize_url => '/oauth/authorize',
-        :token_url => '/oauth/token',
+        :token_url => '/oauth/token'
       }
 
       uid { raw_info['uid'] }
@@ -16,11 +16,10 @@ module OmniAuth
       info do
         {
           "uid" => raw_info["uid"], 
-          "gender"=> (raw_info["sex"] == 1 ? 'Male' : 'Female'), 
           "image"=>raw_info["headurl"],
           'name' => raw_info['name'],
           'urls' => {
-            'Renren' => "http://www.renren.com/profile.do?id="+raw_info["uid"].to_s
+            'Renren' => "http://www.renren.com/#{raw_info["uid"]}/profile"
           }
         }
       end
@@ -34,9 +33,10 @@ module OmniAuth
       def raw_info
         access_token.options[:mode] = :query
         access_token.options[:param_name] = 'access_token'
-        @uid ||= access_token.get('https://api.renren.com/restserver.do/users.getLoggedInUser').parsed["uid"]
-        @raw_info ||= access_token.get("https://api.renren.com/restserver.do/users.getInfo", :params => {:uid => @uid}).parsed
+        @uid ||= access_token.post('https://api.renren.com/restserver.do', :params => {:method => 'users.getLoggedInUser', :v => '1.0', :format => 'JSON'}).parsed["uid"]
+        @raw_info ||= access_token.post("https://api.renren.com/restserver.do", :params => {:method => 'users.getInfo', :uid => @uid, :v => '1.0', :format => 'JSON'}).parsed[0]
       end      
     end
   end
 end
+OmniAuth.config.add_camelization 'renren', 'Renren'
